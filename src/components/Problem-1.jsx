@@ -31,18 +31,16 @@ const Problem1 = () => {
     };
 
     const getFilteredTasks = () => {
-        let filteredTasks = tasks;
-        if (show !== 'all') {
-            filteredTasks = tasks.filter(task => task.status === show);
-        }
-        // Sort the tasks based on the status
-        return filteredTasks.sort((a, b) => {
-            if (a.status === 'Active' && b.status !== 'Active') return -1;
-            if (b.status === 'Active' && a.status !== 'Active') return 1;
-            if (a.status === 'Completed' && b.status !== 'Completed') return -1;
-            if (b.status === 'Completed' && a.status !== 'Completed') return 1;
-            return 0;
+        let filteredTasks = tasks.filter(task => {
+            if (show === 'all') return true;
+            return task.status === show;
         });
+        // Sort the tasks based on the status
+        filteredTasks.sort((a, b) => {
+            const statusOrder = { Active: 1, Completed: 2 };
+            return (statusOrder[a.status] || 3) - (statusOrder[b.status] || 3);
+        });
+        return filteredTasks;
     };
 
     return (

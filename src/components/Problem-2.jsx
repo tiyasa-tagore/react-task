@@ -1,56 +1,112 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import Modal from 'react-modal';
 
-const Problem2 = () => {
-    const [contacts, setContacts] = useState([]);
-    const [loading, setLoading] = useState(true);
+Modal.setAppElement('#root');
 
-    useEffect(() => {
-        const fetchContacts = async () => {
-            try {
-                const response = await axios.get('https://contact.mediusware.com/api-doc/');
-                console.log(response.data); // Log the response to see its structure
-                // Assuming response.data contains the schema of the contact object
-                const contactSchema = response.data;
-                // Create a sample contact object using the schema
-                const sampleContact = {
-                    id: 1,
-                    phone: '1234567890'
-                };
-                setContacts([sampleContact]); // Setting a sample contact for demonstration
-                setLoading(false);
-            } catch (error) {
-                console.error('Error fetching contacts:', error);
-                setLoading(false);
-            }
-        };
+const ProblemSolution = () => {
+  const [isModalOpen, setIsModalOpen] = useState({ a: false, b: false });
+  const [contacts, setContacts] = useState([]);
+  const [onlyEven, setOnlyEven] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
 
-        fetchContacts();
-    }, []);
+  useEffect(() => {
+    // Initially fetch all contacts
+    fetchContacts();
+  }, []);
 
-    return (
-        <div className="container">
-            <div className="row justify-content-center mt-5">
-                <h4 className='text-center text-uppercase mb-5'>Problem-2</h4>
-                {loading ? (
-                    <p>Loading...</p>
-                ) : (
-                    <div className="d-flex justify-content-center gap-3">
-                        <button className="btn btn-lg btn-outline-primary" type="button">All Contacts</button>
-                        <button className="btn btn-lg btn-outline-warning" type="button">US Contacts</button>
-                    </div>
-                )}
-                <div>
-                    <h5>Contacts:</h5>
-                    <ul>
-                        {contacts.map(contact => (
-                            <li key={contact.id}>ID: {contact.id}, Phone: {contact.phone}</li>
-                        ))}
-                    </ul>
-                </div>
-            </div>
-        </div>
-    );
+  const fetchContacts = async (isUS = false) => {
+    // Define the API endpoint for US contacts if it's different
+    const url = isUS ? 'https://contact.mediusware.com/api/us-contacts/' : 'https://contact.mediusware.com/api/contacts/';
+    try {
+      const response = await axios.get(url);
+      // Assuming the API response has a 'results' field containing an array of contacts
+      setContacts(response.data.results || []);
+    } catch (error) {
+      console.error('Error fetching contacts:', error);
+    }
+  };
+
+  const handleCheckboxChange = (e) => {
+    setOnlyEven(e.target.checked);
+  };
+
+  const handleSearchChange = (e) => {
+    setSearchTerm(e.target.value);
+  };
+
+  const toggleModal = (modal) => {
+    // Fetch US contacts when opening Modal B
+    if (modal === 'b' && !isModalOpen[modal]) {
+      fetchContacts(true);
+    }
+
+    // Update modal state and URL
+    setIsModalOpen(current => {
+      const newIsModalOpen = { ...current, [modal]: !current[modal] };
+      window.history.pushState({}, '', newIsModalOpen[modal] ? `/${modal}` : '/');
+      return newIsModalOpen;
+    });
+  };
+
+  const getFilteredContacts = () => {
+    return contacts.filter(contact => {
+      const contactName = contact.name || '';
+      return (!onlyEven || contact.id % 2 === 0) && contactName.toLowerCase().includes(searchTerm.toLowerCase());
+    });
+  };
+
+  const modalStyle = {
+    content: {
+      top: '50%',
+      left: '50%',
+      right: 'auto',
+      bottom: 'auto',
+      transform: 'translate(-50%, -50%)',
+    },
+  };
+
+  const buttonStyleA = {
+    backgroundColor: '#46139f',
+    color: 'white',
+  };
+
+  const buttonStyleB = {
+    backgroundColor: '#f7f7f0',
+    color: '#46139f',
+  };
+
+  return (
+    <div className="container">
+      <button style={buttonStyleA} onClick={() => toggleModal('a')}>All Contact</button>
+      <button style={buttonStyleB} onClick={() => toggleModal('b')}>US Contact</button>
+
+      <Modal isOpen={isModalOpen.a} onRequestClose={() => toggleModal('a')} style={modalStyle}>
+        <h2>All Contacts</h2>
+        <button style={buttonStyleB} onClick={() => { toggleModal('b'); toggleModal('a'); }}>US Contacts</button>
+        <button style={buttonStyleB} onClick={() => toggleModal('a')}>Close</button>
+        <input type="checkbox" checked={onlyEven} onChange={handleCheckboxChange} /> Only even
+        <input type="text" placeholder="Search..." value={searchTerm} onChange={handleSearchChange} />
+        <ul>
+          {getFilteredContacts().map(contact => (
+            <li key={contact.id}>{contact.name} - {contact.phone}</li>
+          ))}
+        </ul>
+      </Modal>
+
+      <Modal isOpen={isModalOpen.b} onRequestClose={() => toggleModal('b')} style={modalStyle}>
+        <h2>US Contacts</h2>
+        <button style={buttonStyleA} onClick={() => { toggleModal('a'); toggleModal('b'); }}>All Contacts</button>
+        <button style={buttonStyleB} onClick={() => toggleModal('b')}>Close</button>
+        <ul>
+          {getFilteredContacts().map(contact => (
+            <li key={contact.id}>{contact.name} - {contact.phone}</li>
+          ))}
+        </ul>
+      </Modal>
+      
+    </div>
+  );
 };
 
-export default Problem2;
+export default ProblemSolution;
